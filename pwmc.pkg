@@ -1,0 +1,23 @@
+v 3
+d pwmc: Stata module to perform pairwise multiple comparisons with unequal variances
+d
+d
+d {cmd:pwmc} performs pairwise multiple comparisons of means with unequal variances.
+d
+d KW: mean comparisons
+d KW: unequal variances
+d KW: confidence intervals
+d KW: Dunnett
+d KW: Games and Howell
+d KW: Tamhane
+d
+d Requires: Stata version 12.1
+d
+d Distribution-Date: 20240717
+d
+d Author: Daniel Klein
+d Support: email klein.daniel.81@gmail.com
+d
+f pwmc.ado
+f pwmci.ado
+f pwmc.sthlp
