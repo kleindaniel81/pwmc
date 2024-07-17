@@ -1,2 +1,2 @@
 v 3
-p pwmc Stata module to compute pairwise multiple comparisons with unequal variances
+p pwmc Stata module to preform pairwise multiple comparisons with unequal variances
