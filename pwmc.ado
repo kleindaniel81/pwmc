@@ -1,4 +1,4 @@
-*! version 2.0.1  17jul2024
+*! version 2.0.2  18jul2024
 program pwmc
     
     version 12.1 , born(25nov2013)
@@ -113,7 +113,7 @@ program pwmc_display
     return_fmt p %5.3f `pformat'
     return_fmt s %8.2f `sformat'
     
-    return_table_layout , `hc3' `adjust' `varlabels' `vallabels'
+    return_table_layout , `adjust' `hc3' `welch' `varlabels' `vallabels'
     
     tempname table
     
@@ -133,7 +133,7 @@ program pwmc_display
         
         display
         
-        return_table_layout , `hc3' `varlabels' `vallabels'
+        return_table_layout , `hc3' `welch' `varlabels' `vallabels'
         
         pwmc_display_table_header
         
@@ -243,14 +243,17 @@ program pwmc_display_table
     
     line BT , `adjust'
     
-    if (`nmethods' == 1) ///
-        exit
-    
     local C  Dunnett C
     local GH Games and Howell
     local T2 Tamhane T2
     
-    display as txt "Key:" _continue
+    gettoken m method : method
+    
+    if (`nmethods' > 1) ///
+        display as txt "Key: " _col(`=8-strlen("`m'")') "`m': ``m''" _continue
+    
+    display as txt `r(T_df_title)' 
+    
     foreach m of local method {
         display as txt _col(`=8-strlen("`m'")') "`m': ``m''"
     }
@@ -493,8 +496,9 @@ program return_table_layout
     
     syntax        ///
     [ ,           ///
-        HC3       ///
         noADJust  ///
+        HC3       ///
+        Welch     ///
         VARLabels ///
         VALLabels ///
     ]
@@ -532,11 +536,11 @@ program return_table_layout
             if ("`method'" == "noadjust") ///
                 local p_title2 _col(`=`r(T_col_1_width)'+30') "Unadjusted"
             else if ("`method'" == "c") ///
-                local p_title2 _col(`=`r(T_col_1_width)'+29') "Dunnett's C"
+                local p_title2 _col(`=`r(T_col_1_width)'+31') "Dunnett C"
             else if ("`method'" == "gh") ///
                 local p_title2 _col(`=`r(T_col_1_width)'+26') "Games / Howell"
             else if ("`method'" == "t2") ///
-                local p_title2 _col(`=`r(T_col_1_width)'+28') "Tamhane's T2"
+                local p_title2 _col(`=`r(T_col_1_width)'+30') "Tamhane T2"
             
         }
         
@@ -547,16 +551,6 @@ program return_table_layout
     if ("`r(cieffects)'" == "cieffects") {
         
         if ("`r(pveffects)'" == "pveffects") {
-            
-            if (`nmethods' == 1) {
-                
-                if ("`method'" == "noadjust") ///
-                    local p_title2 // void
-                else ///    
-                    local p_title2 _col(`=`r(T_col_1_width)'+32') "Adjusted"
-                
-            }
-            else local p_title2 // void
             
             local col_ci_title = `r(T_col_1_width)' + 45 - (strlen("`r(level)'")-2)
             local ci_ll_fmt _col(`=`r(T_col_1_width)'+44') `r(cfmt)'
@@ -582,13 +576,16 @@ program return_table_layout
             if ("`method'" == "noadjust") ///
                 local ci_title2 _col(`=`col_ci_title'+6') "Unadjusted"
             else if ("`method'" == "c") ///
-                local ci_title2 _col(`=`col_ci_title'+5') "Dunnett's C"
+                local ci_title2 _col(`=`col_ci_title'+7') "Dunnett C"
             else if ("`method'" == "gh") ///
                 local ci_title2 _col(`=`col_ci_title'+2') "Games and Howell"
             else if ("`method'" == "t2") ///
-                local ci_title2 _col(`=`col_ci_title'+4') "Tamhane's T2"
+                local ci_title2 _col(`=`col_ci_title'+6') "Tamhane T2"
             
         }
+        
+        if ("`welch'" == "welch") ///
+            local df_title _col(`=`col_last'-26') "Welch's degrees of freedom"
         
     }
     
@@ -610,6 +607,8 @@ program return_table_layout
     mata : st_global("r(T_ci_ul_fmt)",  st_local("ci_ul_fmt"),    "hidden")
     
     mata : st_global("r(T_col_last)",   st_local("col_last"),     "hidden")
+    
+    mata : st_global("r(T_df_title)",   st_local("df_title"),     "hidden")
     
 end
 
@@ -1105,6 +1104,7 @@ exit
 /*  _________________________________________________________________________
                                                               version history
 
+2.0.2   18jul2024   changed output (it does not stop ...)
 2.0.1   18jul2024   must be born before 25nov2013
                     minor layout adjustment
 2.0.0   17jul2024   complete rewrite
