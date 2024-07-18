@@ -1,7 +1,7 @@
-*! version 2.0.0  17jul2024
+*! version 2.0.1  17jul2024
 program pwmc
     
-    version 12.1
+    version 12.1 , born(25nov2013)
     
     if ( replay() ) {
         
@@ -24,14 +24,14 @@ program pwmc_estimate_and_display
         , Over(varname numeric)                       /// required
     [                                                 ///
         MCOMPare(passthru)                            ///
-        PROCedure(passthru)       /// synonym mcompare(); no longer documented
+        PROCedure(passthru)   /// synonym for mcompare(); no longer documented
         noADJust       /// synonym for mcompare(noadjust)
         HC3                                           ///
         Welch                                         ///
         Level(cilevel)                                ///
         CIeffects                                     ///
         PVEffects                                     ///
-        PValues       /// retained synonym for pveffects; no longer documented
+        PValues                /// synonym for pveffects; no longer documented
         EFFects                                       ///
         VARLabels                                     ///
         VALLabels                                     ///        
@@ -172,6 +172,7 @@ program pwmc_display_table_header
     line + , `adjust'
     
 end
+
 
 program pwmc_display_table
     
@@ -1104,6 +1105,8 @@ exit
 /*  _________________________________________________________________________
                                                               version history
 
+2.0.1   18jul2024   must be born before 25nov2013
+                    minor layout adjustment
 2.0.0   17jul2024   complete rewrite
                     new options -noadjust-, -hc3-, and -welch-
                     fweights allowed (not documented)

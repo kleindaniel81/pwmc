@@ -1,7 +1,7 @@
-*! version 3.0.0  17jul2024
+*! version 3.0.1  18jul2024
 program pwmci
     
-    version 12.1
+    version 12.1 , born(25nov2013)
     
     syntax anything(id = "arguments") [ , * ]
     
@@ -27,11 +27,7 @@ program pwmci
         
         if ( (`obs'<=0) | (`sd'<0) ) {
             
-            if (`obs' <= 0) ///
-                local what observations
-            else ///
-                local what standard deviation
-            
+            local what = cond(`obs'<=0,"observations","standard deviation")
             display as err "`what' must be positive"
             exit 498
             
@@ -113,6 +109,8 @@ exit
 /*  _________________________________________________________________________
                                                               version history
 
+3.0.1   18jul2024   must be born before 25nov2013
+                    minor code polish
 3.0.0   17jul2024   complete rewrite
                     new options -noadjust-, -hc3-, and -welch-
                     no longer call external Mata function
