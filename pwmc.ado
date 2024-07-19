@@ -1,4 +1,4 @@
-*! version 2.0.2  18jul2024
+*! version 2.1.0  19jul2024
 program pwmc
     
     version 12.1 , born(25nov2013)
@@ -28,6 +28,7 @@ program pwmc_estimate_and_display
         noADJust       /// synonym for mcompare(noadjust)
         HC3                                           ///
         Welch                                         ///
+        DF(passthru)                                  /// not documented 
         Level(cilevel)                                ///
         CIeffects                                     ///
         PVEffects                                     ///
@@ -47,7 +48,7 @@ program pwmc_estimate_and_display
     
     pwmc_display ,                                    ///
         `mcompare' `procedure' `adjust'               ///
-        `hc3' `welch' level(`level')                  ///
+        `hc3' `welch' `df' level(`level')             ///
         `cieffects' `pveffects' `pvalues' `effects'   ///
         `varlabels' `vallabels'                       ///
         `cformat' `pformat' `sformat'                 ///
@@ -85,6 +86,7 @@ program pwmc_display
         noADJust             ///
         HC3                  ///
         Welch                ///
+        DF(numlist max=1 >0) ///
         Level(cilevel)       ///
         CIeffects            ///
         PVEffects            ///
@@ -98,11 +100,18 @@ program pwmc_display
         noTABle              ///
     ]
     
+    if ( ("`welch'"=="welch") & ("`df'"!="") ) {
+        
+        display as err "option df() not allowd"
+        exit 198
+        
+    }
+    
     parse_mcompare , `mcompare' `procedure' `adjust'
     
     confirm_variable , `varlabels' `vallabels'
     
-    mata : pwmc_mctables(`level',"`hc3'","`welch'","`mcompare'")
+    mata : pwmc_mctables(`level',"`hc3'","`welch'","df","`mcompare'")
     
     if ( ("`table'"=="notable") | (!c(noisily)) ) ///
         exit
@@ -185,6 +194,8 @@ program pwmc_display_table
     
     local nmethods : word count `method'
     
+    local strfmt = 4 + regexm("`method'","(BON|SCH)")
+    
     local kstar = r(ks)
     
     local row = 1
@@ -201,8 +212,6 @@ program pwmc_display_table
         
         display as txt %`=`r(T_col_1_width)'-3's `"`r(T_vs_label`i')'"' _continue
         display as txt _col(`r(T_col_1_width)') "{c |}" _continue
-        
-        *display as txt _col(`r(T_col_1_width)') "{c |}" _continue
         
         display as res `r(T_diff_fmt)' `table'[`row',1] _continue // Diff.
         display as res `r(T_se_fmt)'   `table'[`row',2] _continue // Std. Err.
@@ -227,7 +236,8 @@ program pwmc_display_table
             }
             
             if (`nmethods' > 1) ///
-                display as txt _col(`=`r(T_col_last)'+2') %4s "(`m')" _continue
+                display as txt _col(`=`r(T_col_last)'+2') ///
+                    %`strfmt's "(`m')" _continue
             
             display // end of line
             
@@ -243,19 +253,21 @@ program pwmc_display_table
     
     line BT , `adjust'
     
-    local C  Dunnett C
-    local GH Games and Howell
-    local T2 Tamhane T2
+    local C   Dunnett C
+    local GH  Games and Howell
+    local T2  Tamhane T2
+    local BON Bonferroni
+    local SCH Scheffe
     
     gettoken m method : method
     
     if (`nmethods' > 1) ///
-        display as txt "Key: " _col(`=8-strlen("`m'")') "`m': ``m''" _continue
+        display as txt "Key: " _col(`=9-strlen("`m'")') "`m': ``m''" _continue
     
     display as txt `r(T_df_title)' 
     
     foreach m of local method {
-        display as txt _col(`=8-strlen("`m'")') "`m': ``m''"
+        display as txt _col(`=9-strlen("`m'")') "`m': ``m''"
     }
     
 end
@@ -392,7 +404,12 @@ program parse_mcompare_procedure
         if ( !inlist(strlower(`"`m'"'),"c","gh","t2") ) {
             
             local 0 , `m'
-            capture syntax , NOADJust
+            capture syntax ///
+            [ ,            ///
+                NOADJust   ///
+                BONferroni /// not documented
+                SCHeffe    /// not documented
+            ]
             if ( _rc ) {
                 
                 if (`"`procedure'"' == "") {
@@ -407,7 +424,13 @@ program parse_mcompare_procedure
                 
             }
             
-            local m noadjust
+            if (`: word count `noadjust' `bonferroni' `scheffe'' != 1) ///
+                error 198 // quotes were used in mcompare()
+            
+            local m `noadjust' `bonferroni' `scheffe'
+            
+            if ("`m'" != "noadjust") ///
+                local m = substr("`m'",1,3)
             
         }
         
@@ -541,6 +564,10 @@ program return_table_layout
                 local p_title2 _col(`=`r(T_col_1_width)'+26') "Games / Howell"
             else if ("`method'" == "t2") ///
                 local p_title2 _col(`=`r(T_col_1_width)'+30') "Tamhane T2"
+            else if ("`method'" == "bon") ///
+                local p_title2 _col(`=`r(T_col_1_width)'+30') "Bonferroni"
+            else if ("`method'" == "sch") ///
+                local p_title2 _col(`=`r(T_col_1_width)'+32') "Scheffe"
             
         }
         
@@ -581,6 +608,10 @@ program return_table_layout
                 local ci_title2 _col(`=`col_ci_title'+2') "Games and Howell"
             else if ("`method'" == "t2") ///
                 local ci_title2 _col(`=`col_ci_title'+6') "Tamhane T2"
+            else if ("`method'" == "bon") ///
+                local ci_title2 _col(`=`col_ci_title)'+6') "Bonferroni"
+            else if ("`method'" == "sch") ///
+                local ci_title2 _col(`=`col_ci_title)'+8') "Scheffe"
             
         }
         
@@ -687,7 +718,7 @@ program line
     
     if ("`adjust'" != "noadjust") ///
         if (`: word count `r(mcmethod_vs)'' > 1) ///
-            local w_2 = `w_2' + 6
+            local w_2 = `w_2' + 6 + regexm("`r(mcmethod_vs)'","(bon|sch)")
     
     display as txt "{hline `w_1'}{c `separator'}{hline `w_2'}"
     
@@ -901,21 +932,26 @@ void pwmc_tables::ci_level(real scalar level) alpha = level/100
 void pwmc_tables::table_vs(
 
     real scalar hc3,
-    real scalar welch
+    real scalar welch,
+    real scalar df
     
     )
 {
     table_vs = J(9,kstar,0)
     
-    table_vs[1,] = st_matrix("r(b_vs)")
-    table_vs[2,] = st_matrix((hc3   ? "r(se_hc3_vs)"   : "r(se_vs)"))
-    table_vs[7,] = st_matrix((welch ? "r(df_welch_vs)" : "r(df_vs)"))
+    table_vs[1,] = st_matrix("r(b_vs)")                                   // b
+    table_vs[2,] = st_matrix((hc3 ? "r(se_hc3_vs)" : "r(se_vs)"))         // se
     
-    table_vs[3,] = table_vs[1,]:/table_vs[2,]
-    table_vs[4,] = 2*ttail(table_vs[7,],abs(table_vs[3,]))
-    table_vs[8,] = invttail(table_vs[7,],(1-alpha)/2)
-    table_vs[5,] = table_vs[1,]:-table_vs[8,]:*table_vs[2,]
-    table_vs[6,] = table_vs[1,]:+table_vs[8,]:*table_vs[2,]
+    if ( missing(df) )
+        table_vs[7,] = st_matrix((welch ? "r(df_welch_vs)" : "r(df_vs)")) // df
+    else
+        table_vs[7,] = J(1,kstar,df)
+    
+    table_vs[3,] = table_vs[1,]:/table_vs[2,]                             // t
+    table_vs[4,] = 2*ttail(table_vs[7,],abs(table_vs[3,]))                // pvalue
+    table_vs[8,] = invttail(table_vs[7,],(1-alpha)/2)                     // crit
+    table_vs[5,] = table_vs[1,]:-table_vs[8,]:*table_vs[2,]               // ll
+    table_vs[6,] = table_vs[1,]:+table_vs[8,]:*table_vs[2,]               // ul
 }
 
 
@@ -933,19 +969,32 @@ void pwmc_tables::mcompare(string rowvector mcompare)
     df = table_vs[7,]
     
     if ( any(row=select((1..cols(mcompare)), (mcompare:=="c"))) ) {
-       crit_adj[row,] = dunnett_c(invtukeyprob(k,(n:-1),alpha) :* (sd:^2):/n)
+        // no adjusted pvalue
+        crit_adj[row,] = dunnett_c(invtukeyprob(k,(n:-1),alpha) :* (sd:^2):/n)
     }
     
     if ( any(row=select((1..cols(mcompare)), (mcompare:=="gh"))) ) {
         pvalue_adj[row,] = 1:-tukeyprob(k,df,abs(table_vs[3,])*sqrt(2))
-        pvalue_adj[row,] = colmin(J(1, kstar, 1)\ pvalue_adj[row,])
+        pvalue_adj[row,] = colmin(J(1,kstar,1)\ pvalue_adj[row,])
         crit_adj[row,] = invtukeyprob(k,df,alpha)/sqrt(2)
     }
     
     if ( any(row=select((1..cols(mcompare)), (mcompare:=="t2"))) ) {
         pvalue_adj[row,] = 1 :- (1:-table_vs[4,]):^kstar
-        pvalue_adj[row,] = colmin(J(1, kstar, 1)\ pvalue_adj[row,])
+        pvalue_adj[row,] = colmin(J(1,kstar,1)\ pvalue_adj[row,])
         crit_adj[row,] = invttail(df,(1-alpha^(1/kstar))/2)
+    }
+    
+    if ( any(row=select((1..cols(mcompare)), (mcompare:=="bon"))) ) {
+        pvalue_adj[row,] = kstar*table_vs[4,]
+        pvalue_adj[row,] = colmin(J(1,kstar,1)\ pvalue_adj[row,])
+        crit_adj[row,] = invttail(table_vs[7,],((1-alpha)/kstar)/2) 
+    }
+    
+    if ( any(row=select((1..cols(mcompare)), (mcompare:=="sch"))) ) {
+        pvalue_adj[row,] = Ftail(k-1,table_vs[7,],table_vs[3,]:^2/(k-1))
+        pvalue_adj[row,] = colmin(J(1,kstar,1)\ pvalue_adj[row,])
+        crit_adj[row,] = sqrt(invFtail(k-1,table_vs[7,],(1-alpha))*2)
     }
     
     ll_adj = table_vs[1,]:-crit_adj:*table_vs[2,]
@@ -1076,6 +1125,7 @@ void pwmc_mctables(
     real   scalar level,
     string scalar hc3,
     string scalar welch,
+    string scalar dfname,
     string scalar mcompare
     
     )
@@ -1087,7 +1137,7 @@ void pwmc_mctables(
     
     T.ci_level(level)
     
-    T.table_vs((hc3=="hc3"),(welch=="welch"))
+    T.table_vs((hc3=="hc3"),(welch=="welch"),strtoreal(st_local(dfname)))
     
     T.mcompare(tokens(mcompare))
     
@@ -1104,6 +1154,9 @@ exit
 /*  _________________________________________________________________________
                                                               version history
 
+2.1.0   19jul2024   new -mcompare()- methods -bonferroni- and -scheffe-
+                    new option -df()-
+                    additions are not documented
 2.0.2   18jul2024   changed output (it does not stop ...)
 2.0.1   18jul2024   must be born before 25nov2013
                     minor layout adjustment
