@@ -13,12 +13,13 @@ d KW: Tamhane
 d
 d Requires: Stata version 12.1
 d
-d Distribution-Date: 20240719
+d Distribution-Date: 20250324
 d
 d Author: Daniel Klein
 d Support: email klein.daniel.81@gmail.com
 d
 f pwmc.ado
 f pwmci.ado
+f pwmc_version.ado
 f pwmc.sthlp
 f pwmci.sthlp
