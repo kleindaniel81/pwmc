@@ -1,4 +1,4 @@
-*! version 3.0.0  24mar2025
+*! version 3.0.1  28mar2025
 program pwmc
     
     version 12.1 , born(25nov2013)
@@ -111,7 +111,6 @@ program pwmc_report
         SUmmarize            ///
         `zstd'               ///
         noTABle              ///
-        unequal              ///
     ]
     
     parse_mcompare , `mcompare' `procedure' `adjust' `legacydefault'
@@ -1216,8 +1215,6 @@ void pwmc_ado::estimate()
     V_vs  = J(8,kstar,.z)
     df_vs = J(3,kstar,.z)
     
-    np1 = n:+1
-    
     for (i=j=1; i<k; i++) {
         
         ij = (j..(k-i)+(j-1))
@@ -1724,6 +1721,7 @@ exit
 /*  _________________________________________________________________________
                                                               version history
 
+3.0.1   28mar2025   remove code redundancies
 3.0.0   24mar2025   new -mcompare()- method -sidak-; not documented
                     new -mcompare()- method -tukey-; not documented
                     new option -legacydefault-; not documented
