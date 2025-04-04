@@ -1,4 +1,4 @@
-*! version 3.0.1  28mar2025
+*! version 3.0.2  04apr2025
 program pwmc
     
     version 12.1 , born(25nov2013)
@@ -703,7 +703,12 @@ program return_default_setype_and_df
         mata : st_numscalar("r(default_df)",  st_numscalar("r(df_r)"), "hidden")
         mata : st_global("r(default_setype)", "ols",                   "hidden")
         
+        exit
+        
     }
+    
+    mata : st_global("r(default_df)",     "", "hidden")
+    mata : st_global("r(default_setype)", "", "hidden")
     
 end
 
@@ -1721,6 +1726,7 @@ exit
 /*  _________________________________________________________________________
                                                               version history
 
+3.0.2   04apr2025   bug fix: wrong default se() and df() for replay
 3.0.1   28mar2025   remove code redundancies
 3.0.0   24mar2025   new -mcompare()- method -sidak-; not documented
                     new -mcompare()- method -tukey-; not documented
